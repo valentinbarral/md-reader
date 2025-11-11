@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="appTitle">MD Reader - Markdown Reader</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Fuentes open source -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Material Icons de Google -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Highlight.js para syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <!-- Marked.js para parsear Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Botón para mostrar sidebar (fijo a la izquierda) -->
+        <button id="showSidebarBtn" class="sidebar-toggle-btn">
+            <span class="material-icons">menu</span>
+        </button>
+
+        <!-- Barra lateral de outline -->
+        <aside id="sidebar" class="sidebar hidden">
+            <div class="sidebar-header">
+                <h3 data-i18n="index">Index</h3>
+                <button id="toggleSidebar" class="toggle-btn" data-i18n-aria="closeSidebar" aria-label="Close sidebar">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <nav id="outline" class="outline">
+                <p class="no-outline" data-i18n="loadFileForIndex">Load a file to see the index</p>
+            </nav>
+        </aside>
+
+        <!-- Botón para mostrar panel de configuración (fijo a la derecha) -->
+        <button id="showControlsBtn" class="controls-toggle-btn">
+            <span class="material-icons">settings</span>
+        </button>
+
+        <!-- Barra lateral de controles (derecha) -->
+        <aside id="controlsPanel" class="controls-sidebar hidden">
+            <div class="controls-sidebar-header">
+                <h3 data-i18n="settings">Settings</h3>
+                <button id="closeControlsBtn" class="toggle-btn" data-i18n-aria="closeSettings" aria-label="Close settings panel">
+                    <span class="material-icons">close</span>
+                </button>
+            </div>
+            <div class="controls-content">
+                <div class="control-group">
+                    <label for="themeSelect" data-i18n="theme">Theme:</label>
+                    <select id="themeSelect" class="control-select">
+                        <option value="light" data-i18n="light">Light</option>
+                        <option value="dark" data-i18n="dark">Dark</option>
+                        <option value="sepia" data-i18n="sepia">Sepia</option>
+                        <option value="gray" data-i18n="gray">Gray</option>
+                        <option value="contrast" data-i18n="contrast">Contrast</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="fontSelect" data-i18n="font">Font:</label>
+                    <select id="fontSelect" class="control-select">
+                        <option value="Inter">Inter</option>
+                        <option value="Source Serif Pro">Source Serif Pro</option>
+                        <option value="Roboto Slab">Roboto Slab</option>
+                        <option value="Lora">Lora</option>
+                        <option value="Crimson Pro">Crimson Pro</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="fontSizeSelect" data-i18n="size">Size:</label>
+                    <input type="range" id="fontSizeSelect" class="control-range" min="12" max="28" value="16">
+                    <span id="fontSizeValue">16px</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="widthSelect" data-i18n="width">Width:</label>
+                    <input type="range" id="widthSelect" class="control-range" min="40" max="100" value="70">
+                    <span id="widthValue">70%</span>
+                </div>
+
+                <div class="control-group">
+                    <label for="viewModeSelect" data-i18n="view">View:</label>
+                    <select id="viewModeSelect" class="control-select">
+                        <option value="continuous" data-i18n="continuous">Continuous</option>
+                        <option value="paged" data-i18n="paged">Paged</option>
+                    </select>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Área principal -->
+        <main class="main-content">
+
+            <!-- Área de carga de archivo -->
+            <div id="fileDropArea" class="file-drop-area">
+                <div class="drop-zone">
+                    <svg class="drop-icon" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <h2 data-i18n="dropFile">Arrastra tu archivo Markdown aquí</h2>
+                    <p data-i18n="or">o</p>
+                    <button id="fileSelectBtn" class="file-select-btn" data-i18n="selectFile">Seleccionar archivo</button>
+                    <input type="file" id="fileInput" accept=".md,.markdown" style="display: none;">
+                </div>
+                <!-- Selector de idioma -->
+                <div class="language-selector">
+                    <button class="lang-btn" data-lang="en">EN</button>
+                    <button class="lang-btn" data-lang="es">ES</button>
+                    <button class="lang-btn" data-lang="gl">GL</button>
+                </div>
+                <!-- License Information -->
+                <footer class="license-footer">
+                    <p>
+                        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license" class="license-link">
+                            <img src="https://i.creativecommons.org/l/by/4.0/88x31.png" alt="Creative Commons License" style="border-width:0; vertical-align: middle; margin-right: 8px;">
+                        </a>
+                        This work is licensed under a 
+                        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="license" class="license-link">Creative Commons Attribution 4.0 International License</a>.
+                        <br>
+                        © <a href="#" class="license-link">Valentin Barral</a>
+                    </p>
+                </footer>
+            </div>
+
+            <!-- Área de visualización -->
+            <div id="viewerContainer" class="viewer-container" style="display: none;">
+                <div id="viewer" class="viewer"></div>
+                
+                <!-- Controles de paginación -->
+                <div id="paginationControls" class="pagination-controls" style="display: none;">
+                    <button id="prevPageBtn" class="page-btn" data-i18n="previous">← Previous</button>
+                    <span id="pageInfo" class="page-info" data-i18n-template="pageInfo">Page 1 of 1</span>
+                    <button id="nextPageBtn" class="page-btn" data-i18n="next">Next →</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
