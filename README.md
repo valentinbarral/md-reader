@@ -2,6 +2,10 @@
 
 A modern, feature-rich Markdown reader application with a beautiful and customizable interface.
 
+## Demo
+
+Try it online: [https://valentinbarral.github.io/md-reader/](https://valentinbarral.github.io/md-reader/)
+
 ## Features
 
 - **Drag & Drop**: Simply drag and drop your Markdown files to start reading
