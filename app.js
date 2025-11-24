@@ -19,6 +19,7 @@ const translations = {
         dropFile: 'Drag your Markdown file here',
         or: 'or',
         selectFile: 'Select file',
+        pasteMarkdown: 'Paste your Markdown code here',
         previous: '← Previous',
         next: 'Next →',
         pageInfo: 'Page {current} of {total}',
@@ -48,6 +49,7 @@ const translations = {
         dropFile: 'Arrastra tu archivo Markdown aquí',
         or: 'o',
         selectFile: 'Seleccionar archivo',
+        pasteMarkdown: 'Pega tu código Markdown aquí',
         previous: '← Anterior',
         next: 'Siguiente →',
         pageInfo: 'Página {current} de {total}',
@@ -77,6 +79,7 @@ const translations = {
         dropFile: 'Arrastra o teu ficheiro Markdown aquí',
         or: 'ou',
         selectFile: 'Seleccionar ficheiro',
+        pasteMarkdown: 'Pega o teu código Markdown aquí',
         previous: '← Anterior',
         next: 'Seguinte →',
         pageInfo: 'Páxina {current} de {total}',
@@ -111,6 +114,7 @@ const elements = {
     fileDropArea: document.getElementById('fileDropArea'),
     fileInput: document.getElementById('fileInput'),
     fileSelectBtn: document.getElementById('fileSelectBtn'),
+    markdownPaste: document.getElementById('markdownPaste'),
     viewerContainer: document.getElementById('viewerContainer'),
     viewer: document.getElementById('viewer'),
     sidebar: document.getElementById('sidebar'),
@@ -170,6 +174,27 @@ function setupEventListeners() {
     elements.fileDropArea.addEventListener('dragover', handleDragOver);
     elements.fileDropArea.addEventListener('dragleave', handleDragLeave);
     elements.fileDropArea.addEventListener('drop', handleDrop);
+    
+    // Pegado de markdown
+    if (elements.markdownPaste) {
+        let pasteTimeout;
+        elements.markdownPaste.addEventListener('paste', () => {
+            // Esperar a que el contenido se pegue antes de procesar
+            clearTimeout(pasteTimeout);
+            pasteTimeout = setTimeout(() => {
+                processPastedMarkdown();
+            }, 100);
+        });
+        elements.markdownPaste.addEventListener('input', () => {
+            // Usar debounce para evitar procesar en cada tecla
+            clearTimeout(pasteTimeout);
+            pasteTimeout = setTimeout(() => {
+                if (elements.markdownPaste.value.trim().length > 0) {
+                    processPastedMarkdown();
+                }
+            }, 500);
+        });
+    }
     
     // Controles
     elements.themeSelect.addEventListener('change', (e) => {
@@ -250,6 +275,8 @@ function setupEventListeners() {
         if (state.viewMode === 'paged' && state.markdownContent) {
             calculatePages();
         }
+        // Reaplicar ancho cuando cambia el tamaño de la ventana
+        applyWidth();
     });
     
     // Cerrar barras laterales al hacer clic fuera de ellas
@@ -319,6 +346,43 @@ function handleDrop(e) {
     } else {
         alert(translations[state.currentLanguage].invalidFileDrag);
     }
+}
+
+// Manejo de pegado de markdown
+function processPastedMarkdown() {
+    if (!elements.markdownPaste) return;
+    
+    const content = elements.markdownPaste.value.trim();
+    
+    if (content.length === 0) return;
+    
+    // Parsear frontmatter YAML
+    const parsed = parseFrontmatter(content);
+    // Eliminar comandos LaTeX
+    const cleanedContent = removeLatexCommands(parsed.content);
+    state.markdownContent = cleanedContent;
+    state.frontmatter = parsed.frontmatter;
+    state.currentFile = null; // No hay archivo, es contenido pegado
+    
+    renderMarkdown();
+    generateOutline();
+    elements.fileDropArea.style.display = 'none';
+    elements.viewerContainer.style.display = 'flex';
+    
+    // Ocultar selector de idioma y footer de licencia cuando se carga contenido
+    const langSelector = document.querySelector('.language-selector');
+    if (langSelector) {
+        langSelector.style.display = 'none';
+    }
+    const licenseFooter = document.querySelector('.license-footer');
+    if (licenseFooter) {
+        licenseFooter.style.display = 'none';
+    }
+    
+    // Aplicar configuración después de renderizar
+    setTimeout(() => {
+        applySettings();
+    }, 100);
 }
 
 function loadFile(file) {
@@ -613,6 +677,11 @@ function applyFontSize() {
 
 // Aplicar ancho
 function applyWidth() {
+    // En móviles, no aplicar ancho personalizado (se maneja con CSS)
+    if (window.innerWidth <= 768) {
+        elements.viewer.style.width = '';
+        return;
+    }
     elements.viewer.style.width = `${state.width}%`;
     // Recalcular páginas si está en modo paginado
     if (state.viewMode === 'paged') {
@@ -798,6 +867,14 @@ function updateLanguage() {
         const key = option.getAttribute('data-i18n');
         if (t[key]) {
             option.textContent = t[key];
+        }
+    });
+    
+    // Actualizar placeholders
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.getAttribute('data-i18n-placeholder');
+        if (t[key]) {
+            el.setAttribute('placeholder', t[key] + '...');
         }
     });
     

@@ -83,7 +83,7 @@
                     <span id="fontSizeValue">16px</span>
                 </div>
 
-                <div class="control-group">
+                <div class="control-group width-control-group">
                     <label for="widthSelect" data-i18n="width">Width:</label>
                     <input type="range" id="widthSelect" class="control-range" min="40" max="100" value="70">
                     <span id="widthValue">70%</span>
@@ -114,6 +114,11 @@
                     <p data-i18n="or">o</p>
                     <button id="fileSelectBtn" class="file-select-btn" data-i18n="selectFile">Seleccionar archivo</button>
                     <input type="file" id="fileInput" accept=".md,.markdown" style="display: none;">
+                </div>
+                <div class="paste-zone">
+                    <p data-i18n="or">o</p>
+                    <label for="markdownPaste" class="paste-label" data-i18n="pasteMarkdown">Pega tu código Markdown aquí</label>
+                    <textarea id="markdownPaste" class="markdown-paste-area" data-i18n-placeholder="pasteMarkdown" placeholder="Pega tu código Markdown aquí..."></textarea>
                 </div>
                 <!-- Selector de idioma -->
                 <div class="language-selector">
