@@ -16,6 +16,7 @@ Try it online: [https://valentinbarral.github.io/md-reader/](https://valentinbar
 - **Multi-language Support**: Available in English, Spanish, and Galician
 - **Pagination Mode**: Switch between continuous and paged viewing modes
 - **Syntax Highlighting**: Code blocks are beautifully highlighted
+- **Math Equations**: Render mathematical expressions using LaTeX syntax ($inline$ and $$block$$)
 
 ## Usage
 
@@ -29,6 +30,7 @@ Try it online: [https://valentinbarral.github.io/md-reader/](https://valentinbar
 - Vanilla JavaScript
 - Marked.js for Markdown parsing
 - Highlight.js for code syntax highlighting
+- KaTeX for mathematical equation rendering
 - Material Icons for UI elements
 
 ## License

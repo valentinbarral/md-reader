@@ -467,36 +467,74 @@ function removeLatexCommands(content) {
     return content.replace(latexCommandRegex, '');
 }
 
+// Procesar ecuaciones matemáticas en contenido Markdown
+function renderMathInMarkdown(markdownContent) {
+    // Procesar ecuaciones en bloques ($$...$$)
+    markdownContent = markdownContent.replace(/\$\$([\s\S]*?)\$\$/g, (match, math) => {
+        try {
+            return katex.renderToString(math.trim(), {
+                displayMode: true,
+                throwOnError: false
+            });
+        } catch (error) {
+            console.warn('Error rendering block math:', error);
+            return match; // Devolver el original si hay error
+        }
+    });
+
+    // Procesar ecuaciones inline ($...$)
+    markdownContent = markdownContent.replace(/\$([^$\n]+)\$/g, (match, math) => {
+        // Evitar procesar si hay espacios al inicio o final (no es una ecuación)
+        if (math.trim() !== math) {
+            return match;
+        }
+        try {
+            return katex.renderToString(math.trim(), {
+                displayMode: false,
+                throwOnError: false
+            });
+        } catch (error) {
+            console.warn('Error rendering inline math:', error);
+            return match; // Devolver el original si hay error
+        }
+    });
+
+    return markdownContent;
+}
+
 // Renderizar Markdown
 function renderMarkdown() {
-    let htmlContent = marked.parse(state.markdownContent);
-    
+    // Procesar ecuaciones matemáticas ANTES del parsing de Markdown
+    let processedContent = renderMathInMarkdown(state.markdownContent);
+
+    let htmlContent = marked.parse(processedContent);
+
     // Añadir encabezado con frontmatter si existe
     if (state.frontmatter) {
         const header = createFrontmatterHeader(state.frontmatter);
         htmlContent = header + htmlContent;
     }
-    
+
     state.htmlContent = htmlContent;
     elements.viewer.innerHTML = state.htmlContent;
-    
+
     // Aplicar syntax highlighting
     elements.viewer.querySelectorAll('pre code').forEach((block) => {
         hljs.highlightElement(block);
     });
-    
+
     // Añadir IDs a los encabezados para navegación
     elements.viewer.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((heading, index) => {
         if (!heading.id) {
             heading.id = `heading-${index}`;
         }
     });
-    
+
     // Actualizar paginación si está en modo paginado
     if (state.viewMode === 'paged') {
         calculatePages();
     }
-    
+
     // Actualizar opacidad de botones después de renderizar
     setTimeout(() => {
         updateButtonsOpacity();
