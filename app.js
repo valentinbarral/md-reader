@@ -1,3 +1,7 @@
+const markedLib = window.marked;
+let pretextApi = null;
+let pretextLoadAttempted = false;
+
 // Traducciones
 const translations = {
     en: {
@@ -139,15 +143,20 @@ const elements = {
 };
 
 // Configurar marked.js
-marked.setOptions({
-    breaks: true,
-    gfm: true,
-    headerIds: true,
-    mangle: false
-});
+if (markedLib) {
+    markedLib.setOptions({
+        breaks: true,
+        gfm: true,
+        headerIds: true,
+        mangle: false
+    });
+} else {
+    console.error('Marked.js is not available. Markdown parsing will be disabled.');
+}
 
 // Inicialización
 function init() {
+    loadPretextLibrary();
     setupEventListeners();
     loadSettings();
     loadLanguage();
@@ -507,7 +516,7 @@ function renderMarkdown() {
     // Procesar ecuaciones matemáticas ANTES del parsing de Markdown
     let processedContent = renderMathInMarkdown(state.markdownContent);
 
-    let htmlContent = marked.parse(processedContent);
+    let htmlContent = markedLib ? markedLib.parse(processedContent) : `<pre>${escapeHtml(processedContent)}</pre>`;
 
     // Añadir encabezado con frontmatter si existe
     if (state.frontmatter) {
@@ -755,6 +764,12 @@ function calculatePages() {
         updatePaginationUI();
         return;
     }
+
+    if (calculatePagesWithPretext()) {
+        updatePaginationUI();
+        updateButtonsOpacity();
+        return;
+    }
     
     const viewerHeight = elements.viewer.clientHeight;
     const scrollHeight = elements.viewer.scrollHeight;
@@ -769,6 +784,84 @@ function calculatePages() {
     state.currentPage = Math.min(state.currentPage, state.totalPages - 1);
     updatePaginationUI();
     updateButtonsOpacity();
+}
+
+function calculatePagesWithPretext() {
+    if (!pretextApi) return false;
+
+    const textForLayout = elements.viewer ? elements.viewer.innerText.trim() : '';
+    if (!textForLayout) return false;
+
+    const styles = window.getComputedStyle(elements.viewer);
+    const fontSize = parseFloat(styles.fontSize) || 16;
+    const lineHeight = parseLineHeight(styles.lineHeight, fontSize);
+    const contentWidth = getViewerContentWidth(styles);
+
+    if (!Number.isFinite(contentWidth) || contentWidth <= 0 || !Number.isFinite(lineHeight) || lineHeight <= 0) {
+        return false;
+    }
+
+    const font = buildFontShorthand(styles);
+    const prepared = pretextApi.prepare(textForLayout, font);
+    const result = pretextApi.layout(prepared, contentWidth, lineHeight);
+    const viewerHeight = elements.viewer.clientHeight;
+
+    if (!viewerHeight || !Number.isFinite(result.height)) {
+        return false;
+    }
+
+    state.totalPages = Math.max(1, Math.ceil(result.height / viewerHeight));
+    state.currentPage = Math.min(state.currentPage, state.totalPages - 1);
+    return true;
+}
+
+function buildFontShorthand(styles) {
+    const fontStyle = styles.fontStyle || 'normal';
+    const fontWeight = styles.fontWeight || '400';
+    const fontSize = styles.fontSize || '16px';
+    const fontFamily = styles.fontFamily || 'Inter';
+    return `${fontStyle} ${fontWeight} ${fontSize} ${fontFamily}`;
+}
+
+function parseLineHeight(lineHeightValue, fontSize) {
+    if (!lineHeightValue || lineHeightValue === 'normal') {
+        return fontSize * 1.2;
+    }
+
+    if (lineHeightValue.endsWith('px')) {
+        return parseFloat(lineHeightValue);
+    }
+
+    const numeric = parseFloat(lineHeightValue);
+    if (!Number.isFinite(numeric)) {
+        return fontSize * 1.2;
+    }
+
+    return numeric * fontSize;
+}
+
+function getViewerContentWidth(styles) {
+    const paddingLeft = parseFloat(styles.paddingLeft) || 0;
+    const paddingRight = parseFloat(styles.paddingRight) || 0;
+    return elements.viewer.clientWidth - paddingLeft - paddingRight;
+}
+
+function loadPretextLibrary() {
+    if (pretextLoadAttempted) return;
+    pretextLoadAttempted = true;
+
+    import('https://cdn.jsdelivr.net/npm/@chenglou/pretext@0.0.3/dist/layout.js')
+        .then((module) => {
+            if (module && typeof module.prepare === 'function' && typeof module.layout === 'function') {
+                pretextApi = { prepare: module.prepare, layout: module.layout };
+                if (state.viewMode === 'paged' && state.markdownContent) {
+                    calculatePages();
+                }
+            }
+        })
+        .catch((error) => {
+            console.warn('Pretext could not be loaded, using legacy pagination.', error);
+        });
 }
 
 function navigatePage(direction) {
@@ -1011,4 +1104,3 @@ function initSidebarState() {
     // Inicializar opacidad de botones
     updateButtonsOpacity();
 }
-
